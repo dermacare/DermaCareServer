@@ -28,6 +28,19 @@ const getDocuments = (collection, query, projection, sort, callback) => {
     })
 }
 
+const getDocumentById = (collection, id, projection, callback) => {
+  if (!db) return callback(new Error('DB not connected'))
+  const objId = new mongodb.ObjectID(id)
+  const query = { _id: objId }
+  db.collection(collection)
+    .find(query)
+    .project(projection)
+    .limit(1)
+    .toArray((err, docs) => {
+      callback(err, docs[0])
+    })
+}
+
 process.on('SIGINT', () => {
   console.log('\nClosing DB connection')
   client.close()
@@ -36,5 +49,6 @@ process.on('SIGINT', () => {
 })
 
 module.exports = {
-  get: getDocuments
+  get: getDocuments,
+  getById: getDocumentById
 }
