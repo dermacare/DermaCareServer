@@ -6,27 +6,28 @@ const productsRouter = express.Router()
 productsRouter.use('/products/:id', function (req, res, next) {
   console.log('Requested Id:', req.params.id)
   const id = req.params.id
-  mongo.getById('products', id, null, (err, result) => {
+  mongo.getById('products', [id], null, (err, result) => {
     if (err) {
       return res.status(500).json({ message: 'Failed to complete request' })
     }
-    if (result.length !== 0) {
-      var ingredients = result.ingredients
-      var ingInfo = []
-        for (var i = 0; i < ingredients.length; i++) {
-        mongo.getById('ingredients', ingredients[i], null, (err, ingResult) => {
-          if (err) {
-            return res.status(500).json({ message: 'Failed to complete request' })
-          }
-          ingInfo.push(ingResult)
-          console.log(ingResult)
-        })
+    console.log(result)
+    if (result != null && result.length !== 0) {
+      if (result.length > 1) {
+        return res.status(500).json({ message: 'Something went wrong.' })
       }
-      console.log(ingInfo)
-      //result.ingredients = ingInfo
-      return res.status(200).json(result)
+      var product = result[0]
+      var ingredients = product.ingredients
+      mongo.getById('ingredients', ingredients, null, (err, ingResult) => {
+        if (err) {
+          return res.status(500).json({ message: 'Something went wrong.' })
+        }
+        console.log(ingResult)
+        product.ingredients = ingResult
+        return res.status(200).json(product)
+      })
+    } else {
+      return res.status(404).json({ message: 'No matched data' })
     }
-    res.status(404).json({ message: 'No matched data' })
   })
 })
 

@@ -28,16 +28,23 @@ const getDocuments = (collection, query, projection, sort, callback) => {
     })
 }
 
-const getDocumentById = (collection, id, projection, callback) => {
+const getDocumentsById = (collection, ids, projection, callback) => {
   if (!db) return callback(new Error('DB not connected'))
-  const objId = new mongodb.ObjectID(id)
-  const query = { _id: objId }
+  var objIds = []
+
+  if (ids === undefined || ids.length === 0) {
+    return callback(new Error('No ids provided'))
+  }
+  for (var i = 0; i < ids.length; i++) {
+    objIds.push(new mongodb.ObjectID(ids[i]))
+  }
+  const query = { _id: { $in: objIds } }
   db.collection(collection)
     .find(query)
     .project(projection)
-    .limit(1)
     .toArray((err, docs) => {
-      callback(err, docs[0])
+      docs.sort((a, b) => ids.findIndex(id => a._id.equals(id)) - ids.findIndex(id => b._id.equals(id)))
+      callback(err, docs)
     })
 }
 
@@ -50,5 +57,5 @@ process.on('SIGINT', () => {
 
 module.exports = {
   get: getDocuments,
-  getById: getDocumentById
+  getById: getDocumentsById
 }
