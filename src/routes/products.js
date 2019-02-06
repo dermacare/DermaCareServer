@@ -3,6 +3,10 @@ const mongo = require('../mongo')
 
 const productsRouter = express.Router()
 
+RegExp.escape = function (s) {
+  return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')
+}
+
 productsRouter.use('/products/:id', function (req, res, next) {
   console.log('Requested Id:', req.params.id)
   const id = req.params.id
@@ -36,7 +40,7 @@ productsRouter.get('/products', (req, res) => {
   console.log('Query: ' + query)
 
   let sortCriteria = { posted_date: -1 }
-  mongo.get('products', { name: { $regex: new RegExp(query, 'i') } }, { name: 1 }, sortCriteria, (err, result) => {
+  mongo.get('products', { name: { $regex: new RegExp(RegExp.escape(query), 'i') } }, { name: 1 }, sortCriteria, (err, result) => {
     if (err) {
       return res.status(500).json({ message: 'Failed to complete request' })
     }

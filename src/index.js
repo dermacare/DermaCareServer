@@ -45,7 +45,7 @@ app.use((req, res) => {
 })
 
 // setup server
-var server = app.listen(8080)
+var server = app.listen(3000)
 // console.log(app._router.stack)
 
 module.exports = app
