@@ -4,10 +4,15 @@
   "description": "",
   "main": "index.js",
   "dependencies": {
+    "bcrypt": "^3.0.4",
+    "circular-json": "^0.5.9",
     "config": "^3.0.1",
+    "connect-mongo": "^2.0.3",
     "express": "^4.16.4",
+    "express-session": "^1.15.6",
     "less-middleware": "^3.1.0",
-    "mongodb": "^3.1.12"
+    "mongodb": "^3.1.12",
+    "mongoose": "^5.4.16"
   },
   "devDependencies": {
     "eslint": "^5.12.1",

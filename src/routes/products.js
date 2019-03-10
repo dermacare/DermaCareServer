@@ -7,7 +7,18 @@ RegExp.escape = function (s) {
   return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')
 }
 
-productsRouter.use('/products/:id', function (req, res, next) {
+Array.prototype.diff = function (arr2) {
+  var ret = []
+  for (var i in this) {
+    if (arr2.indexOf(JSON.stringify(this[i])) > -1) {
+      console.log('Match ', this[i])
+      ret.push(this[i])
+    }
+  }
+  return ret
+}
+
+productsRouter.use('/:id', function (req, res, next) {
   console.log('Requested Id:', req.params.id)
   const id = req.params.id
   mongo.getById('products', [id], null, (err, result) => {
@@ -35,7 +46,7 @@ productsRouter.use('/products/:id', function (req, res, next) {
   })
 })
 
-productsRouter.get('/products', (req, res) => {
+productsRouter.get('/', (req, res) => {
   const query = req.query.query || ''
   console.log('Query: ' + query)
 
