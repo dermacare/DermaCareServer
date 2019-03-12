@@ -3,11 +3,14 @@ var profileRouter = express.Router()
 var User = require('../models/user')
 var Favorites = require('../models/favorites')
 var Comparison = require('../models/comparison')
+var cors = require('cors')
 const mongo = require('../mongo')
 const bodyParser = require('body-parser')
 // POST route for updating data
 
 profileRouter.use(bodyParser.json())
+var origins = ['http://localhost:8080', 'http://dermacare.eastus.cloudapp.azure.com:8080']
+profileRouter.use(cors({ origin: origins, credentials: true }))
 
 function intersectArrays (a, b) {
   var sorteda = a.concat().sort()

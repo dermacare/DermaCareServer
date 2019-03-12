@@ -8,6 +8,7 @@
     "circular-json": "^0.5.9",
     "config": "^3.0.1",
     "connect-mongo": "^2.0.3",
+    "cors": "^2.8.5",
     "express": "^4.16.4",
     "express-session": "^1.15.6",
     "less-middleware": "^3.1.0",
