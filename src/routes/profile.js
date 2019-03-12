@@ -303,8 +303,12 @@ profileRouter.use('/comparison/compare', function (req, res, next) {
             if (result != null && result.length !== 0) {
               var product1 = result[0]
               var product2 = result[1]
+              product1['score'] = Math.round(Math.random() * 5)
+              product2['score'] = Math.round(Math.random() * 5)
+
               var ingredients1 = product1.ingredients
               var ingredients2 = product2.ingredients
+
               console.log('Ummm ', ingredients1[0], ingredients2[0])
               // console.log(ingredients1.diff(ingredients2))
               var commonIngs = intersectArrays(ingredients1, ingredients2)
@@ -313,9 +317,14 @@ profileRouter.use('/comparison/compare', function (req, res, next) {
                 if (err) {
                   return res.status(500).json({ message: 'Something went wrong.' })
                 }
-                // console.log(ingResult)
-                // product1.ingredients = ingResult
-                return res.status(200).json(ingResult)
+                var resJson = {}
+                delete product1.ingredients
+                delete product2.ingredients
+
+                resJson['products'] = [product1, product2]
+                resJson['common_ingredients'] = ingResult
+
+                return res.status(200).json(resJson)
               })
             } else {
               return res.status(404).json({ message: 'No matched data' })
