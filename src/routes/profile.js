@@ -80,6 +80,9 @@ profileRouter.post('/login', function (req, res, next) {
 // GET route after registering
 profileRouter.get('/', function (req, res, next) {
   var userId = req.session.userId || req.headers.token
+  if (userId === null || userId === 'null' || userId === '') {
+    return res.status(401).json({ error: 'Please log in to see this page' })
+  }
   console.log('UserId: ' + userId)
   User.findById(userId)
     .exec(function (error, user) {
@@ -87,9 +90,7 @@ profileRouter.get('/', function (req, res, next) {
         return next(error)
       } else {
         if (user === null) {
-          var err = new Error('Not authorized! Go back!')
-          err.status = 401
-          return next(err)
+          return res.status(401).json({ error: 'Please log in to see this page' })
         } else {
           return res.status(200).json({ username: user.username, email: user.email })
         }
@@ -100,6 +101,9 @@ profileRouter.get('/', function (req, res, next) {
 // GET route after registering
 profileRouter.get('/favorites', function (req, res, next) {
   var userId = req.session.userId || req.headers.token
+  if (userId === null || userId === 'null' || userId === '') {
+    return res.status(401).json({ error: 'Please log in to see this page' })
+  }
   console.log('UserId: ' + userId)
   User.findById(userId)
     .exec(function (error, user) {
@@ -107,19 +111,15 @@ profileRouter.get('/favorites', function (req, res, next) {
         return next(error)
       }
       if (user === null) {
-        var err = new Error('Not authorized! Go back!')
-        err.status = 401
-        return next(err)
+        return res.status(401).json({ error: 'Please log in to see this page' })
       }
       Favorites.find({ userId: userId })
         .exec(function (error, favorites) {
           if (error) {
             return next(error)
           }
-          if (favorites === null) {
-            var err = new Error('No favorites')
-            err.status = 400
-            return next(err)
+          if (favorites === null || favorites.length === 0) {
+            return res.status(400).json({ error: 'No products in the list' })
           }
           var productsIds = []
           for (var i = 0; i < favorites.length; i++) {
@@ -129,12 +129,12 @@ profileRouter.get('/favorites', function (req, res, next) {
           console.log(JSON.stringify(productsIds))
           mongo.getById('products', productsIds, null, (err, result) => {
             if (err) {
-              return res.status(500).json({ message: 'Failed to complete request' })
+              return res.status(500).json({ error: 'Failed to complete request' })
             }
             if (result.length !== 0) {
               return res.status(200).json(result)
             }
-            res.status(404).json({ message: 'No matched data' })
+            return res.status(400).json({ error: 'No matched data' })
           })
         })
     })
@@ -143,6 +143,9 @@ profileRouter.get('/favorites', function (req, res, next) {
 // GET route after registering
 profileRouter.post('/favorites/add', function (req, res, next) {
   var userId = req.session.userId || req.headers.token
+  if (userId === null || userId === 'null' || userId === '') {
+    return res.status(401).json({ error: 'Please log in to see this page' })
+  }
   console.log('UserId: ' + userId)
   User.findById(userId)
     .exec(function (error, user) {
@@ -150,9 +153,7 @@ profileRouter.post('/favorites/add', function (req, res, next) {
         return next(error)
       }
       if (user === null) {
-        var err = new Error('Not authorized! Go back!')
-        err.status = 401
-        return next(err)
+        return res.status(401).json({ error: 'Please log in to see this page' })
       }
       var productId = req.body.productId
 
@@ -181,6 +182,9 @@ profileRouter.post('/favorites/add', function (req, res, next) {
 // GET route after registering
 profileRouter.delete('/favorites/:id', function (req, res, next) {
   var userId = req.session.userId || req.headers.token
+  if (userId === null || userId === 'null' || userId === '') {
+    return res.status(401).json({ error: 'Please log in to see this page' })
+  }
   console.log('UserId: ' + userId)
   User.findById(userId)
     .exec(function (error, user) {
@@ -189,10 +193,7 @@ profileRouter.delete('/favorites/:id', function (req, res, next) {
         return next(error)
       }
       if (user === null) {
-        var err = new Error('Not authorized! Go back!')
-        console.log('Error: ', err)
-        err.status = 401
-        return next(err)
+        return res.status(401).json({ error: 'Please log in to see this page' })
       }
       const productId = req.params.id
       Favorites.findOne({ userId: userId, productId: productId }, function (error, doc) {
@@ -219,26 +220,25 @@ profileRouter.delete('/favorites/:id', function (req, res, next) {
 // GET route after registering
 profileRouter.get('/comparison', function (req, res, next) {
   var userId = req.session.userId || req.headers.token
-  console.log('UserId: ' + userId)
+  if (userId === null || userId === 'null' || userId === '') {
+    return res.status(401).json({ error: 'Please log in to see this page' })
+  }
+  console.log('UserId: ' + typeof (userId))
   User.findById(userId)
     .exec(function (error, user) {
       if (error) {
         return next(error)
       }
       if (user === null) {
-        var err = new Error('Not authorized! Go back!')
-        err.status = 401
-        return next(err)
+        return res.status(401).json({ error: 'Please log in to see this page' })
       }
       Comparison.find({ userId: userId })
         .exec(function (error, comparison) {
           if (error) {
             return next(error)
           }
-          if (comparison === null) {
-            var err = new Error('No comparison')
-            err.status = 400
-            return next(err)
+          if (comparison === null || comparison.length === 0) {
+            return res.status(400).json({ error: 'No products in the list' })
           }
           var productsIds = []
           for (var i = 0; i < comparison.length; i++) {
@@ -248,12 +248,12 @@ profileRouter.get('/comparison', function (req, res, next) {
           console.log(JSON.stringify(productsIds))
           mongo.getById('products', productsIds, null, (err, result) => {
             if (err) {
-              return res.status(500).json({ message: 'Failed to complete request' })
+              return res.status(500).json({ error: 'Failed to complete request' })
             }
             if (result.length !== 0) {
               return res.status(200).json(result)
             }
-            res.status(404).json({ message: 'No matched data' })
+            return res.status(400).json({ error: 'No matched data' })
           })
         })
     })
@@ -262,6 +262,9 @@ profileRouter.get('/comparison', function (req, res, next) {
 // GET route after registering
 profileRouter.post('/comparison/add', function (req, res, next) {
   var userId = req.session.userId || req.headers.token
+  if (userId === null || userId === 'null' || userId === '') {
+    return res.status(401).json({ error: 'Please log in to see this page' })
+  }
   console.log('UserId: ' + userId)
   User.findById(userId)
     .exec(function (error, user) {
@@ -310,6 +313,9 @@ profileRouter.post('/comparison/add', function (req, res, next) {
 
 profileRouter.use('/comparison/compare', function (req, res, next) {
   var userId = req.session.userId || req.headers.token
+  if (userId === null || userId === 'null' || userId === '') {
+    return res.status(401).json({ error: 'Please log in to see this page' })
+  }
   console.log('UserId: ' + userId)
   User.findById(userId)
     .exec(function (error, user) {
@@ -379,6 +385,9 @@ profileRouter.use('/comparison/compare', function (req, res, next) {
 // GET route after registering
 profileRouter.delete('/comparison/:id', function (req, res, next) {
   var userId = req.session.userId || req.headers.token
+  if (userId === null || userId === 'null' || userId === '') {
+    return res.status(401).json({ error: 'Please log in to see this page' })
+  }
   console.log('UserId: ' + userId)
   User.findById(userId)
     .exec(function (error, user) {
