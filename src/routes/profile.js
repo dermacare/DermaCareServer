@@ -6,11 +6,13 @@ var Comparison = require('../models/comparison')
 var cors = require('cors')
 const mongo = require('../mongo')
 const bodyParser = require('body-parser')
-// POST route for updating data
+// const jwt = require('jsonwebtoken')
 
 profileRouter.use(bodyParser.json())
 var origins = ['http://localhost:8080', 'http://dermacare.eastus.cloudapp.azure.com:8080']
 profileRouter.use(cors({ origin: origins, credentials: true }))
+
+// const secret = 'mysecretsshhh'
 
 function intersectArrays (a, b) {
   var sorteda = a.concat().sort()
@@ -38,10 +40,7 @@ profileRouter.post('/login', function (req, res, next) {
   console.log(JSON.stringify(req.body))
   // confirm that user typed same password twice
   if (req.body.password !== req.body.passwordConf) {
-    var err = new Error('Passwords do not match.')
-    err.status = 400
-    res.send('passwords dont match')
-    return next(err)
+    return res.status(400).json({ 'error': 'Passwords do not match.' })
   }
 
   if (req.body.email &&
@@ -56,33 +55,33 @@ profileRouter.post('/login', function (req, res, next) {
 
     User.create(userData, function (error, user) {
       if (error) {
-        return next(error)
+        return res.status(401).json({ 'error': 'User with this email or username already exists.' })
       } else {
         req.session.userId = user._id
-        return res.status(201).end()
+        // const token = jwt.sign({ email: req.body.logemail }, secret, { expiresIn: 50000 })
+        return res.status(200).json({ 'token': user._id })
       }
     })
   } else if (req.body.logemail && req.body.logpassword) {
     User.authenticate(req.body.logemail, req.body.logpassword, function (error, user) {
       if (error || !user) {
-        var err = new Error('Wrong email or password.')
-        err.status = 401
-        return next(err)
+        return res.status(401).json({ 'error': 'Wrong email or password.' })
       } else {
         req.session.userId = user._id
-        return res.status(201).end()
+        // const token = jwt.sign({ email: req.body.logemail }, secret, { expiresIn: 50000 })
+        return res.status(200).json({ 'token': user._id })
       }
     })
   } else {
-    var err = new Error('All fields required.')
-    err.status = 400
-    return next(err)
+    return res.status(400).json({ 'error': 'All fields required.' })
   }
 })
 
 // GET route after registering
 profileRouter.get('/', function (req, res, next) {
-  User.findById(req.session.userId)
+  var userId = req.session.userId || req.headers.token
+  console.log('UserId: ' + userId)
+  User.findById(userId)
     .exec(function (error, user) {
       if (error) {
         return next(error)
@@ -100,7 +99,9 @@ profileRouter.get('/', function (req, res, next) {
 
 // GET route after registering
 profileRouter.get('/favorites', function (req, res, next) {
-  User.findById(req.session.userId)
+  var userId = req.session.userId || req.headers.token
+  console.log('UserId: ' + userId)
+  User.findById(userId)
     .exec(function (error, user) {
       if (error) {
         return next(error)
@@ -110,7 +111,7 @@ profileRouter.get('/favorites', function (req, res, next) {
         err.status = 401
         return next(err)
       }
-      Favorites.find({ userId: req.session.userId })
+      Favorites.find({ userId: userId })
         .exec(function (error, favorites) {
           if (error) {
             return next(error)
@@ -120,14 +121,30 @@ profileRouter.get('/favorites', function (req, res, next) {
             err.status = 400
             return next(err)
           }
-          return res.status(200).json(favorites)
+          var productsIds = []
+          for (var i = 0; i < favorites.length; i++) {
+            productsIds.push(favorites[i].productId.toString())
+          }
+
+          console.log(JSON.stringify(productsIds))
+          mongo.getById('products', productsIds, null, (err, result) => {
+            if (err) {
+              return res.status(500).json({ message: 'Failed to complete request' })
+            }
+            if (result.length !== 0) {
+              return res.status(200).json(result)
+            }
+            res.status(404).json({ message: 'No matched data' })
+          })
         })
     })
 })
 
 // GET route after registering
 profileRouter.post('/favorites/add', function (req, res, next) {
-  User.findById(req.session.userId)
+  var userId = req.session.userId || req.headers.token
+  console.log('UserId: ' + userId)
+  User.findById(userId)
     .exec(function (error, user) {
       if (error) {
         return next(error)
@@ -139,12 +156,12 @@ profileRouter.post('/favorites/add', function (req, res, next) {
       }
       var productId = req.body.productId
 
-      Favorites.findOne({ userId: req.session.userId, productId: productId }, function (error, doc) {
+      Favorites.findOne({ userId: userId, productId: productId }, function (error, doc) {
         if (error) {
           return next(error)
         }
         if (doc === null) {
-          Favorites.create({ userId: req.session.userId, productId: productId }, function (error, doc) {
+          Favorites.create({ userId: userId, productId: productId }, function (error, doc) {
             if (error) {
               return next(error)
             }
@@ -163,7 +180,9 @@ profileRouter.post('/favorites/add', function (req, res, next) {
 
 // GET route after registering
 profileRouter.delete('/favorites/:id', function (req, res, next) {
-  User.findById(req.session.userId)
+  var userId = req.session.userId || req.headers.token
+  console.log('UserId: ' + userId)
+  User.findById(userId)
     .exec(function (error, user) {
       if (error) {
         console.log('Error: ', error)
@@ -176,7 +195,7 @@ profileRouter.delete('/favorites/:id', function (req, res, next) {
         return next(err)
       }
       const productId = req.params.id
-      Favorites.findOne({ userId: req.session.userId, productId: productId }, function (error, doc) {
+      Favorites.findOne({ userId: userId, productId: productId }, function (error, doc) {
         if (error) {
           return next(error)
         }
@@ -199,7 +218,9 @@ profileRouter.delete('/favorites/:id', function (req, res, next) {
 
 // GET route after registering
 profileRouter.get('/comparison', function (req, res, next) {
-  User.findById(req.session.userId)
+  var userId = req.session.userId || req.headers.token
+  console.log('UserId: ' + userId)
+  User.findById(userId)
     .exec(function (error, user) {
       if (error) {
         return next(error)
@@ -209,7 +230,7 @@ profileRouter.get('/comparison', function (req, res, next) {
         err.status = 401
         return next(err)
       }
-      Comparison.find({ userId: req.session.userId })
+      Comparison.find({ userId: userId })
         .exec(function (error, comparison) {
           if (error) {
             return next(error)
@@ -219,14 +240,30 @@ profileRouter.get('/comparison', function (req, res, next) {
             err.status = 400
             return next(err)
           }
-          return res.status(200).json(comparison)
+          var productsIds = []
+          for (var i = 0; i < comparison.length; i++) {
+            productsIds.push(comparison[i].productId.toString())
+          }
+
+          console.log(JSON.stringify(productsIds))
+          mongo.getById('products', productsIds, null, (err, result) => {
+            if (err) {
+              return res.status(500).json({ message: 'Failed to complete request' })
+            }
+            if (result.length !== 0) {
+              return res.status(200).json(result)
+            }
+            res.status(404).json({ message: 'No matched data' })
+          })
         })
     })
 })
 
 // GET route after registering
 profileRouter.post('/comparison/add', function (req, res, next) {
-  User.findById(req.session.userId)
+  var userId = req.session.userId || req.headers.token
+  console.log('UserId: ' + userId)
+  User.findById(userId)
     .exec(function (error, user) {
       if (error) {
         return next(error)
@@ -237,7 +274,7 @@ profileRouter.post('/comparison/add', function (req, res, next) {
         return next(err)
       }
       var productId = req.body.productId
-      Comparison.find({ userId: req.session.userId })
+      Comparison.find({ userId: userId })
         .exec(function (error, comparison) {
           if (error) {
             return next(error)
@@ -248,12 +285,12 @@ profileRouter.post('/comparison/add', function (req, res, next) {
             return next(err)
           }
 
-          Comparison.findOne({ userId: req.session.userId, productId: productId }, function (error, doc) {
+          Comparison.findOne({ userId: userId, productId: productId }, function (error, doc) {
             if (error) {
               return next(error)
             }
             if (doc === null) {
-              Comparison.create({ userId: req.session.userId, productId: productId }, function (error, doc) {
+              Comparison.create({ userId: userId, productId: productId }, function (error, doc) {
                 if (error) {
                   return next(error)
                 }
@@ -272,7 +309,9 @@ profileRouter.post('/comparison/add', function (req, res, next) {
 })
 
 profileRouter.use('/comparison/compare', function (req, res, next) {
-  User.findById(req.session.userId)
+  var userId = req.session.userId || req.headers.token
+  console.log('UserId: ' + userId)
+  User.findById(userId)
     .exec(function (error, user) {
       if (error) {
         return next(error)
@@ -282,7 +321,7 @@ profileRouter.use('/comparison/compare', function (req, res, next) {
         err.status = 401
         return next(err)
       }
-      Comparison.find({ userId: req.session.userId })
+      Comparison.find({ userId: userId })
         .exec(function (error, comparison) {
           if (error) {
             return next(error)
@@ -300,7 +339,7 @@ profileRouter.use('/comparison/compare', function (req, res, next) {
           console.log('id2: ', id2)
           mongo.getById('products', [id1, id2], null, (err, result) => {
             if (err) {
-              return res.status(500).json({ message: 'Failed to complete request' })
+              return res.status(500).json({ error: 'Failed to complete request' })
             }
             console.log(result)
             if (result != null && result.length !== 0) {
@@ -318,7 +357,7 @@ profileRouter.use('/comparison/compare', function (req, res, next) {
 
               mongo.getById('ingredients', commonIngs, null, (err, ingResult) => {
                 if (err) {
-                  return res.status(500).json({ message: 'Something went wrong.' })
+                  return res.status(500).json({ error: 'Something went wrong.' })
                 }
                 var resJson = {}
                 delete product1.ingredients
@@ -330,7 +369,7 @@ profileRouter.use('/comparison/compare', function (req, res, next) {
                 return res.status(200).json(resJson)
               })
             } else {
-              return res.status(404).json({ message: 'No matched data' })
+              return res.status(404).json({ error: 'No matched data' })
             }
           })
         })
@@ -339,7 +378,9 @@ profileRouter.use('/comparison/compare', function (req, res, next) {
 
 // GET route after registering
 profileRouter.delete('/comparison/:id', function (req, res, next) {
-  User.findById(req.session.userId)
+  var userId = req.session.userId || req.headers.token
+  console.log('UserId: ' + userId)
+  User.findById(userId)
     .exec(function (error, user) {
       if (error) {
         console.log('Error: ', error)
@@ -352,7 +393,7 @@ profileRouter.delete('/comparison/:id', function (req, res, next) {
         return next(err)
       }
       const productId = req.params.id
-      Comparison.findOne({ userId: req.session.userId, productId: productId }, function (error, doc) {
+      Comparison.findOne({ userId: userId, productId: productId }, function (error, doc) {
         if (error) {
           return next(error)
         }

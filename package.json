@@ -11,6 +11,7 @@
     "cors": "^2.8.5",
     "express": "^4.16.4",
     "express-session": "^1.15.6",
+    "jsonwebtoken": "^8.5.0",
     "less-middleware": "^3.1.0",
     "mongodb": "^3.1.12",
     "mongoose": "^5.4.16"
