@@ -171,9 +171,7 @@ profileRouter.post('/favorites/add', function (req, res, next) {
           })
         } else {
           console.log('Found: ', doc)
-          var err = new Error('This product is already added to favorites')
-          err.status = 400
-          return next(err)
+          return res.status(400).json({ error: 'This product is already added to favorites'})
         }
       })
     })
@@ -202,9 +200,7 @@ profileRouter.delete('/favorites/:id', function (req, res, next) {
         }
         if (doc === null) {
           console.log('Found: ', doc)
-          var err = new Error('Product is not found in favorites.')
-          err.status = 404
-          return next(err)
+          return res.status(400).json({ error: 'Product is not found in favorites.'})
         }
         Favorites.remove({ _id: doc._id }, function (error, doc) {
           if (error) {
@@ -272,9 +268,7 @@ profileRouter.post('/comparison/add', function (req, res, next) {
         return next(error)
       }
       if (user === null) {
-        var err = new Error('Not authorized! Go back!')
-        err.status = 401
-        return next(err)
+        return res.status(401).json({ error: 'Not authorized! Go back!'})
       }
       var productId = req.body.productId
       Comparison.find({ userId: userId })
@@ -283,9 +277,7 @@ profileRouter.post('/comparison/add', function (req, res, next) {
             return next(error)
           }
           if (comparison !== null && comparison.length >= 2) {
-            var err = new Error('Cannot add more than 2 objects in comparison list')
-            err.status = 400
-            return next(err)
+            return res.status(400).json({ error: 'Cannot add more than 2 objects in comparison list'})
           }
 
           Comparison.findOne({ userId: userId, productId: productId }, function (error, doc) {
@@ -302,9 +294,7 @@ profileRouter.post('/comparison/add', function (req, res, next) {
               })
             } else {
               console.log('Found: ', doc)
-              var err = new Error('This product is already added to comparison')
-              err.status = 400
-              return next(err)
+              return res.status(400).json({ error: 'This product is already added to comparison'})
             }
           })
         })
@@ -323,9 +313,7 @@ profileRouter.use('/comparison/compare', function (req, res, next) {
         return next(error)
       }
       if (user === null) {
-        var err = new Error('Not authorized! Go back!')
-        err.status = 401
-        return next(err)
+        return res.status(401).json({ error: 'Not authorized! Go back!'})
       }
       Comparison.find({ userId: userId })
         .exec(function (error, comparison) {
@@ -333,9 +321,7 @@ profileRouter.use('/comparison/compare', function (req, res, next) {
             return next(error)
           }
           if (comparison === null || comparison.length !== 2) {
-            var err = new Error('Comparison list should contain 2 products')
-            err.status = 400
-            return next(err)
+            return res.status(400).json({ error: 'Comparison list should contain 2 products'})
           }
 
           const id1 = comparison[0].productId.toString()
@@ -396,10 +382,7 @@ profileRouter.delete('/comparison/:id', function (req, res, next) {
         return next(error)
       }
       if (user === null) {
-        var err = new Error('Not authorized! Go back!')
-        console.log('Error: ', err)
-        err.status = 401
-        return next(err)
+        return res.status(401).json({ error: 'Not authorized! Go back!' })
       }
       const productId = req.params.id
       Comparison.findOne({ userId: userId, productId: productId }, function (error, doc) {
@@ -408,9 +391,7 @@ profileRouter.delete('/comparison/:id', function (req, res, next) {
         }
         if (doc === null) {
           console.log('Found: ', doc)
-          var err = new Error('Product is not found in comparison.')
-          err.status = 404
-          return next(err)
+          return res.status(404).json({ error: 'Product is not found in comparison.' })
         }
         Comparison.remove({ _id: doc._id }, function (eRRor, doc) {
           if (error) {
